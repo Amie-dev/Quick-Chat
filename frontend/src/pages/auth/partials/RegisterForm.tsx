@@ -185,9 +185,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitch }) => {
         </button>
       </form>
       <div className="text-center text-sm mt-4">
-            <span className="text-gray-600">Already have an account? </span>
-            <span onClick={onSwitch} className="text-primary font-medium cursor-pointer hover:underline">Sign In</span>
-        </div>
+        <span className="text-gray-600">Already have an account? </span>
+        <span
+          onClick={onSwitch}
+          className="text-primary font-medium cursor-pointer hover:underline"
+        >
+          Sign In
+        </span>
+      </div>
     </>
   );
 };

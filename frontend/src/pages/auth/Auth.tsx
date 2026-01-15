@@ -3,7 +3,7 @@ import { Mail } from "lucide-react";
 import LogInForm from "./partials/LogInForm";
 import RegisterForm from "./partials/RegisterForm";
 const Auth: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
   return (
     <>
       <div className="min-h-screen w-full bg-white rounded-2xl flex flex-col md:flex-row">
@@ -22,20 +22,15 @@ const Auth: React.FC = () => {
           </div>
         </div>
         <div className="w-full md:w-6/12 flex p-8 justify-center items-center">
-        {
-          isLogin?(
+          {isLogin ? (
             <div className="w-full md:w-100">
-              <LogInForm onSwitch={()=>setIsLogin(!isLogin)}/>
-
+              <LogInForm onSwitch={() => setIsLogin(!isLogin)} />
             </div>
-          ):(
+          ) : (
             <div className="w-full md:w-100">
-              <RegisterForm onSwitch={()=>setIsLogin(!isLogin)}/>
-
+              <RegisterForm onSwitch={() => setIsLogin(!isLogin)} />
             </div>
-          )
-        }
-          
+          )}
         </div>
       </div>
     </>
