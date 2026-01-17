@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { createServer } from "node:http";
 import connectDB from "./utils/db.utils.js";
 import authRouter from "./router/auth.router.js";
+import conversationRouter from "./router/conversations.router.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -25,6 +26,7 @@ app.get("/", (_, res) => {
 
 // Routers
 app.use("/api/auth", authRouter);
+app.use("/api/conversations",conversationRouter)
 
 // ✅ Universal error handler (must be last)
 app.use((err, req, res, next) => {
