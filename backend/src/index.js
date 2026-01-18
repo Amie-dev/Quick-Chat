@@ -4,9 +4,11 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { createServer } from "node:http";
+import {Server} from "socket.io"
 import connectDB from "./utils/db.utils.js";
 import authRouter from "./router/auth.router.js";
 import conversationRouter from "./router/conversations.router.js";
+import { initializeSocket } from "./socket.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -27,6 +29,23 @@ app.get("/", (_, res) => {
 // Routers
 app.use("/api/auth", authRouter);
 app.use("/api/conversations",conversationRouter)
+
+
+const io=new Server(httpServer,{
+  cors:{
+    origin: process.env.CLIENT_ORIGIN,
+    credentials: true,
+    methods:["GET","POST"]
+  },
+   pingInterval: 25000,
+    pingTimeout: 60000,
+})
+
+
+
+
+await initializeSocket(io)
+
 
 // ✅ Universal error handler (must be last)
 app.use((err, req, res, next) => {
