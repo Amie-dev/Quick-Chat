@@ -95,9 +95,6 @@ async function seed() {
         conversation.unreadCounts.set(user1._id.toString(), lastMessage.sender.equals(user1._id) ? 0 : 1);
         await conversation.save();
 
-const response=await axios.get("http://localhost:8080/api/conversations/")
-const data= await response.data
-console.log(data)
         await mongoose.disconnect();
         console.log("Disconnected from MongoDB");
 
