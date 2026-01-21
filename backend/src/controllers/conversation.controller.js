@@ -145,7 +145,7 @@ class ConversationController {
 
             // Friend details
             friend: {
-              id: friend._id.toString(),
+              _id: friend._id.toString(),
               userName: friend.userName,
               fullName: friend.fullName,
               online: false, // TODO: integrate Redis service to check online status
