@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import FriendShip from "../models/frienShip.model.js";
 import User from "../models/user.model.js";
 import Conversation from "../models/conversation.model.js";
+import RedisService from "../services/RedisService.js";
 
 class ConversationController {
   // Controller method to check if a connect code is valid for creating a friendship
@@ -91,7 +92,7 @@ class ConversationController {
       const friendIds = friendShips.map((friend) =>
         friend.requester._id.toString() === userId.toString()
           ? friend.recipient._id.toString()
-          : friend.requester._id.toString()
+          : friend.requester._id.toString(),
       );
 
       // 5. Find all conversations that include the user and exactly one friend
@@ -108,7 +109,7 @@ class ConversationController {
       conversations.forEach((conversation) => {
         // Find the friend (the participant who is not the current user)
         const friendId = conversation.participants.find(
-          (p) => p.toString() !== userId.toString()
+          (p) => p.toString() !== userId.toString(),
         );
         conversationsMap.set(friendId.toString(), conversation);
       });
@@ -148,10 +149,10 @@ class ConversationController {
               _id: friend._id.toString(),
               userName: friend.userName,
               fullName: friend.fullName,
-              online: false, // TODO: integrate Redis service to check online status
+              online: await RedisService.isUserOnline(friend._id.toString()), // integrate Redis service to check online status
             },
           };
-        })
+        }),
       );
 
       // 8. Send the final response back to the client
@@ -164,8 +165,6 @@ class ConversationController {
       });
     }
   }
-
-  
 }
 
 export default ConversationController;
