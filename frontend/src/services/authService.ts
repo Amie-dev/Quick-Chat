@@ -31,7 +31,10 @@ export const authService = {
   },
   logout: async () => {
     await apiClient.get("/auth/logout");
+    // console.log(window.socket);
     if (window?.socket) {
+      // console.log("Emit from logout");
+      // console.log(window.socket);
       window.socket.emit("logout"); // notify server
     }
   },
