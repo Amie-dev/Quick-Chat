@@ -1,4 +1,10 @@
 import apiClient from "../utils/apiClient";
+import { Socket } from "socket.io-client";
+declare global {
+  interface Window {
+    socket?: Socket;
+  }
+}
 
 export const authService = {
   login: async (data: {
@@ -25,5 +31,8 @@ export const authService = {
   },
   logout: async () => {
     await apiClient.get("/auth/logout");
+    if (window?.socket) {
+      window.socket.emit("logout"); // notify server
+    }
   },
 };
