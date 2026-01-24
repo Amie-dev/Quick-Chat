@@ -38,6 +38,7 @@ export const initializeSocket = async (io) => {
 
       // Explicit logout handler
       socket.on("logout", async () => {
+        console.log("Accept Emit")
         try {
           await RedisService.removeAllUserSessions(user._id);
           await notifyConversationOnlineStatus(io, socket, false);
