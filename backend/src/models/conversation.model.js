@@ -34,12 +34,12 @@ conversationSchema.index(
   { unique: true }
 );
 
-conversationSchema.pre("save", function (next) {
+conversationSchema.pre("save", async function () {
   if (this.participants && this.participants.length === 2) {
     this.participants = this.participants.map(p => p.toString()).sort();
   }
-  next();
 });
+
 
 const Conversation = model("Conversation", conversationSchema);
 

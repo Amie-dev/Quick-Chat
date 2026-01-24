@@ -25,16 +25,14 @@ const friendShipSchema = new mongoose.Schema(
 
 friendShipSchema.index({ requester: 1, recipient: 1 }, { unique: true });
 
-friendShipSchema.pre("save", function(next) {
+friendShipSchema.pre("save", async function () {
   if (this.requester.toString() === this.recipient.toString()) {
-    return next(new Error("Requester and recipient cannot be the same user."));
+    throw new Error("Requester and recipient cannot be the same user.");
   }
 
   const ids = [this.requester.toString(), this.recipient.toString()].sort();
-  this.requester = mongoose.Types.ObjectId(ids[0]);
-  this.recipient = mongoose.Types.ObjectId(ids[1]);
-
-  next();
+  this.requester = new mongoose.Types.ObjectId(ids[0]);
+  this.recipient = new mongoose.Types.ObjectId(ids[1]);
 });
 
 const FriendShip = mongoose.model("FriendShip", friendShipSchema);
