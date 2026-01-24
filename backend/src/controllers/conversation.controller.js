@@ -52,6 +52,7 @@ class ConversationController {
       // 7. If all checks pass, the connect code is valid
       res.status(200).json({
         message: "Code is valid",
+        success:true
       });
     } catch (error) {
       // 8. Handle unexpected errors gracefully
