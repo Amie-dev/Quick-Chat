@@ -30,6 +30,17 @@ const ConversationContext = createContext<ConversationsContextType | undefined>(
   undefined,
 );
 
+type OnlineStatusPayload = {
+  friendId: string;
+  userName: string;
+  online: boolean;
+};
+
+type UnreadCountsPayload = {
+  conversationId: string;
+  unreadCounts: Record<string, number>;
+};
+
 export const useConversationsContext = () => {
   const context = useContext(ConversationContext);
   if (!context) {
@@ -83,54 +94,96 @@ export const ConversationsProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   // Handle new conversation acceptance
- const handleNewConversations = (conversation: Conversation) => {
-  setConversations(prev => {
-    const exists = prev.some(c => c.conversationId === conversation.conversationId);
-    return exists
-      ? prev.map(c =>
-          c.conversationId === conversation.conversationId ? { ...c, ...conversation } : c
-        )
-      : [...prev, conversation];
-  });
-  setSearchTerm(""); // ensure new conversation is visible
-  console.log("Added conversation:", conversation);
-  toast.success(`You and ${conversation.friend.userName} are now friends`);
-};
+  const handleNewConversations = (conversation: Conversation) => {
+    setConversations((prev) => {
+      const exists = prev.some(
+        (c) => c.conversationId === conversation.conversationId,
+      );
+      return exists
+        ? prev.map((c) =>
+            c.conversationId === conversation.conversationId
+              ? { ...c, ...conversation }
+              : c,
+          )
+        : [...prev, conversation];
+    });
+    setSearchTerm(""); // ensure new conversation is visible
+    console.log("Added conversation:", conversation);
+    toast.success(`You and ${conversation.friend.userName} are now friends`);
+  };
 
-
-//   useEffect(() => {
-//   console.log("Conversations state updated:", conversations);
-// }, [conversations]);
+  //   useEffect(() => {
+  //   console.log("Conversations state updated:", conversations);
+  // }, [conversations]);
 
   // Handle conversation request error
   const handleNewConversationsError = () =>
     toast.error("Unable to add conversation");
 
+  const markAsHandlerRead = ({
+    conversationId,
+    unreadCounts,
+  }: {
+    conversationId: string;
+    unreadCounts: Record<string, number>;
+  }) => {
+    console.log(
+      "conversation:update-unread-counts",
+      conversationId,
+      unreadCounts,
+    );
+
+    setConversations((prev) => {
+      return prev.map((c) => {
+        if (c.conversationId === conversationId) {
+          return {
+            ...c,
+            unreadCounts,
+          };
+        } else {
+          return c;
+        }
+      });
+    });
+  };
+
+  const errorMarkAsHandlerRead = () =>
+    toast.error("conversation:mark-as-read:error");
+
   // Subscribe to socket events
   useEffect(() => {
-  if (!socket) return;
+    if (!socket) return;
 
-  const onlineHandler = (payload: any) =>
-    handleConversationOnlineStatus(payload);
+    const onlineHandler = (payload: OnlineStatusPayload) =>
+      handleConversationOnlineStatus(payload);
 
-  const acceptHandler = (payload: Conversation) => {
-    console.log("Received new conversation:", payload);
-    handleNewConversations(payload);
-  };
+    const acceptHandler = (payload: Conversation) => {
+      console.log("Received new conversation:", payload);
+      handleNewConversations(payload);
+    };
 
-  const errorHandler = () => handleNewConversationsError();
+    const markAsHandler = (payload: UnreadCountsPayload) => {
+      markAsHandlerRead(payload);
+    };
 
-  socket.on("conversation:online-status", onlineHandler);
-  socket.on("conversation:accept", acceptHandler);
-  socket.on("conversation:request:error", errorHandler);
+    const errorMarkAsHandler = () => errorMarkAsHandlerRead();
 
-  return () => {
-    socket.off("conversation:online-status", onlineHandler);
-    socket.off("conversation:accept", acceptHandler);
-    socket.off("conversation:request:error", errorHandler);
-  };
-}, [socket, handleConversationOnlineStatus]);
+    const errorHandler = () => handleNewConversationsError();
 
+    socket?.on("conversation:online-status", onlineHandler);
+    socket?.on("conversation:accept", acceptHandler);
+    socket?.on("conversation:update-unread-counts", markAsHandler);
+    socket?.on("conversation:mark-as-read:error", errorMarkAsHandler);
+    socket?.on("conversation:request:error", errorHandler);
+
+    return () => {
+      socket?.off("conversation:online-status", onlineHandler);
+      socket?.off("conversation:accept", acceptHandler);
+      socket?.off("conversation:request:error", errorHandler);
+      socket?.off("conversation:update-unread-counts", markAsHandler);
+      socket?.off("conversation:mark-as-read:error", errorMarkAsHandler);
+    };
+  }, [socket, handleConversationOnlineStatus]);
 
   // Filter conversations by search term
   const filteredConversations = conversations.filter((conversation) =>
