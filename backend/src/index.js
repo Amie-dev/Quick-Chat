@@ -9,6 +9,9 @@ import connectDB from "./utils/db.utils.js";
 import authRouter from "./router/auth.router.js";
 import conversationRouter from "./router/conversations.router.js";
 import { initializeSocket } from "./socket.js";
+import { socketAuthMiddleware } from "./socket/socketAuth.middleware.js";
+import RedisService from "./services/RedisService.js";
+import messageRouter from "./router/message.route.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -29,6 +32,7 @@ app.get("/", (_, res) => {
 // Routers
 app.use("/api/auth", authRouter);
 app.use("/api/conversations",conversationRouter)
+app.use("/api/conversations",messageRouter)
 
 
 const io=new Server(httpServer,{
@@ -41,10 +45,12 @@ const io=new Server(httpServer,{
     pingTimeout: 60000,
 })
 
-
+io.use(socketAuthMiddleware)
 
 
 await initializeSocket(io)
+
+await RedisService.initialize()
 
 
 // ✅ Universal error handler (must be last)
