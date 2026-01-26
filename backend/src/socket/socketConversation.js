@@ -29,6 +29,9 @@ export const notifyConversationOnlineStatus = async (io, socket, online) => {
       // Determine the friend's user object (the other side of the friendship)
       const friend = isRequester ? friendship.recipient : friendship.requester;
 
+      const room=getChatRoom(userId.toString(),friend._id.toString())
+
+      socket.join(room)
       // Log for debugging
 
       console.log("emit:conversation:online-status");
@@ -146,6 +149,58 @@ export const conversationRequest = async (io, socket, data) => {
     console.error("Error conversation:request", error);
     socket.emit("conversation:request:error", {
       error: "Error conversation:request",
+    });
+  }
+};
+
+//conversations mark
+export const conversationMarkAsRead = async (io, socket, data) => {
+  try {
+    const { conversationId, friendId } = data;
+    const userId = socket.userId;
+    const friendShip = await FriendShip.findOne({
+      $or: [
+        { requester: userId, recipient: friendId },
+        {
+          requester: friendId,
+          recipient: userId,
+        },
+      ],
+    });
+
+    // conversation:mark-as-read
+
+    if (!friendShip) {
+      socket.emit("conversation:mark-as-read:error", {
+        error: "No Friend Found",
+      });
+      return;
+    }
+
+    const conversation=await Conversation.findById(conversationId)
+
+    if (!conversation) {
+      socket.emit("conversation:mark-as-read:error",{error:"No Conversations Found"})
+      return;
+    }
+
+    conversation.unreadCounts.set(userId.toString(),0);
+    await conversation.save();
+
+
+    const room=getChatRoom(userId.toString(),friendId.toString())
+    io.to(room).emit("conversation:update-unread-counts",{
+      conversationId:conversation._id.toString(),
+      unreadCounts:{
+        [userId.toString()]:0,
+        [friendId.toString()]:conversation.unreadCounts.get(friendId)||0
+      }
+    })
+
+  } catch (error) {
+    console.error("Error Marking conversations as read ", error);
+    socket.emit("conversation:mark-as-read:error", {
+      error: "Error : conversation:mark-as-read:error",
     });
   }
 };

@@ -1,6 +1,7 @@
 import RedisService from "./services/RedisService.js";
 import { leaveAllRooms } from "./socket/helper.js";
 import {
+  conversationMarkAsRead,
   conversationRequest,
   notifyConversationOnlineStatus,
 } from "./socket/socketConversation.js";
@@ -35,6 +36,8 @@ export const initializeSocket = async (io) => {
       socket.on("conversation:request", (data) => {
         conversationRequest(io, socket, data);
       });
+      //conversation:mark-as-read
+      socket.on("conversation:mark-as-read",(data)=>conversationMarkAsRead(io,socket,data))
 
       // Explicit logout handler
       socket.on("logout", async () => {
