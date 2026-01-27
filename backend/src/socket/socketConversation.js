@@ -1,6 +1,7 @@
 import Conversation from "../models/conversation.model.js";
 import FriendShip from "../models/frienShip.model.js";
 import User from "../models/user.model.js";
+import Message from "../models/message.model.js";
 import RedisService from "../services/RedisService.js";
 import { getChatRoom } from "./helper.js";
 
@@ -29,9 +30,9 @@ export const notifyConversationOnlineStatus = async (io, socket, online) => {
       // Determine the friend's user object (the other side of the friendship)
       const friend = isRequester ? friendship.recipient : friendship.requester;
 
-      const room=getChatRoom(userId.toString(),friend._id.toString())
+      const room = getChatRoom(userId.toString(), friend._id.toString());
 
-      socket.join(room)
+      socket.join(room);
       // Log for debugging
 
       console.log("emit:conversation:online-status");
@@ -177,30 +178,117 @@ export const conversationMarkAsRead = async (io, socket, data) => {
       return;
     }
 
-    const conversation=await Conversation.findById(conversationId)
+    const conversation = await Conversation.findById(conversationId);
 
     if (!conversation) {
-      socket.emit("conversation:mark-as-read:error",{error:"No Conversations Found"})
+      socket.emit("conversation:mark-as-read:error", {
+        error: "No Conversations Found",
+      });
       return;
     }
 
-    conversation.unreadCounts.set(userId.toString(),0);
+    conversation.unreadCounts.set(userId.toString(), 0);
     await conversation.save();
 
-
-    const room=getChatRoom(userId.toString(),friendId.toString())
-    io.to(room).emit("conversation:update-unread-counts",{
-      conversationId:conversation._id.toString(),
-      unreadCounts:{
-        [userId.toString()]:0,
-        [friendId.toString()]:conversation.unreadCounts.get(friendId)||0
-      }
-    })
-
+    const room = getChatRoom(userId.toString(), friendId.toString());
+    io.to(room).emit("conversation:update-unread-counts", {
+      conversationId: conversation._id.toString(),
+      unreadCounts: {
+        [userId.toString()]: 0,
+        [friendId.toString()]: conversation.unreadCounts.get(friendId) || 0,
+      },
+    });
   } catch (error) {
     console.error("Error Marking conversations as read ", error);
     socket.emit("conversation:mark-as-read:error", {
       error: "Error : conversation:mark-as-read:error",
+    });
+  }
+};
+
+//conversation:send-message
+export const conversationSendMessage = async (io, socket, data) => {
+  try {
+    // conversation:send-message
+
+    const { conversationId, friendId, content } = data;
+
+    const userId = socket.userId;
+    const user = socket?.user;
+    const friendShip = await FriendShip.findOne({
+      $or: [
+        { requester: userId, recipient: friendId },
+        {
+          requester: friendId,
+          recipient: userId,
+        },
+      ],
+    });
+
+    // conversation:send-message
+
+    if (!friendShip) {
+      socket.emit("conversation:send-message:error", {
+        error: "No Friend Found",
+      });
+      return;
+    }
+
+    const conversation = await Conversation.findById(conversationId);
+
+    if (!conversation) {
+      socket.emit("conversation:send-message:error", {
+        error: "No Conversations Found",
+      });
+      return;
+    }
+
+    const message = new Message({
+      conversation: conversation._id,
+      sender: userId,
+      content,
+    });
+
+    await message.save();
+
+    const currentUnreadCount = conversation.unreadCounts.get(friendId) || 0;
+
+    conversation.unreadCounts.set(friendId, currentUnreadCount + 1);
+
+    await conversation.save();
+
+    const messageData = {
+      _id: message._id.toString(),
+      sender: {
+        _id: userId.toString(),
+        userName: user.userName,
+      },
+      content,
+      read: message.read,
+      createdAt: message.createdAt,
+    };
+
+    const updatedConversation=await Conversation.findById(conversationId)
+
+    const room = getChatRoom(userId.toString(), friendId.toString());
+
+    io.to(room).emit("conversation:new-message", {
+      conversationId,
+      message: messageData,
+    });
+
+    io.to(room).emit("conversation:update-conversation", {
+      conversationId: conversation._id.toString(),
+      lastMessage: updatedConversation.lastMessagePreview,
+      unreadCounts: {
+        [userId.toString()]: updatedConversation.unreadCounts.get(userId.toString()),
+        [friendId]: updatedConversation.unreadCounts.get(friendId),
+      },
+    });
+  } catch (error) {
+    console.error("Error sending message ", error);
+    socket.emit("conversation:send-message:error", {
+      error: "Error : conversation:send-message:error",
     });
   }
 };

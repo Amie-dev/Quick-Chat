@@ -3,6 +3,7 @@ import { leaveAllRooms } from "./socket/helper.js";
 import {
   conversationMarkAsRead,
   conversationRequest,
+  conversationSendMessage,
   notifyConversationOnlineStatus,
 } from "./socket/socketConversation.js";
 
@@ -36,12 +37,20 @@ export const initializeSocket = async (io) => {
       socket.on("conversation:request", (data) => {
         conversationRequest(io, socket, data);
       });
+
       //conversation:mark-as-read
-      socket.on("conversation:mark-as-read",(data)=>conversationMarkAsRead(io,socket,data))
+      socket.on("conversation:mark-as-read", (data) =>
+        conversationMarkAsRead(io, socket, data),
+      );
+
+      //conversation:send-message
+      socket.on("conversation:send-message", (data) =>
+        conversationSendMessage(io, socket, data),
+      );
 
       // Explicit logout handler
       socket.on("logout", async () => {
-        console.log("Accept Emit")
+        console.log("Accept Emit");
         try {
           await RedisService.removeAllUserSessions(user._id);
           await notifyConversationOnlineStatus(io, socket, false);
