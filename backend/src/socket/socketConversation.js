@@ -268,7 +268,7 @@ export const conversationSendMessage = async (io, socket, data) => {
       createdAt: message.createdAt,
     };
 
-    const updatedConversation=await Conversation.findById(conversationId)
+    const updatedConversation = await Conversation.findById(conversationId);
 
     const room = getChatRoom(userId.toString(), friendId.toString());
 
@@ -281,7 +281,9 @@ export const conversationSendMessage = async (io, socket, data) => {
       conversationId: conversation._id.toString(),
       lastMessage: updatedConversation.lastMessagePreview,
       unreadCounts: {
-        [userId.toString()]: updatedConversation.unreadCounts.get(userId.toString()),
+        [userId.toString()]: updatedConversation.unreadCounts.get(
+          userId.toString(),
+        ),
         [friendId]: updatedConversation.unreadCounts.get(friendId),
       },
     });
@@ -290,5 +292,23 @@ export const conversationSendMessage = async (io, socket, data) => {
     socket.emit("conversation:send-message:error", {
       error: "Error : conversation:send-message:error",
     });
+  }
+};
+
+//conversation:typing
+
+export const conversationTyping = async (io, socket, data) => {
+  try {
+    const { friendId, isTyping } = data;
+    const userId = socket.userId;
+
+    if (userId.toString() === friendId) return;
+
+    socket.to(friendId).emit("conversation:update-typing", {
+      userId: userId.toString(),
+      isTyping,
+    });
+  } catch (error) {
+    console.error("Error Sending conversations typing status", error);
   }
 };

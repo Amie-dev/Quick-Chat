@@ -4,6 +4,7 @@ import {
   conversationMarkAsRead,
   conversationRequest,
   conversationSendMessage,
+  conversationTyping,
   notifyConversationOnlineStatus,
 } from "./socket/socketConversation.js";
 
@@ -47,6 +48,10 @@ export const initializeSocket = async (io) => {
       socket.on("conversation:send-message", (data) =>
         conversationSendMessage(io, socket, data),
       );
+
+      //conversation:typing
+
+      socket.on("conversation:typing",(data)=>conversationTyping(io,socket,data))
 
       // Explicit logout handler
       socket.on("logout", async () => {
