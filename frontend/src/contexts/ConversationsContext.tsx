@@ -25,6 +25,8 @@ type ConversationsContextType = {
   isLoading: boolean;
   isError: boolean;
 };
+type UpdateConversationPayload = Pick<Conversation, "conversationId" | "lastMessage" | "unreadCounts">;
+
 
 const ConversationContext = createContext<ConversationsContextType | undefined>(
   undefined,
@@ -147,6 +149,27 @@ export const ConversationsProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+
+//
+const updateConversationHandler=(conversation:UpdateConversationPayload)=>{
+
+
+  setConversations((prev)=>{
+    return prev.map((c)=>{
+      if (c.conversationId===conversation.conversationId) {
+        return {
+          ...c,
+          lastMessage:conversation.lastMessage,
+          unreadCounts:conversation.unreadCounts
+        }
+      }
+      return c
+    })
+  })
+}
+
+
+
   const errorMarkAsHandlerRead = () =>
     toast.error("conversation:mark-as-read:error");
 
@@ -165,6 +188,10 @@ export const ConversationsProvider: React.FC<{ children: React.ReactNode }> = ({
     const markAsHandler = (payload: UnreadCountsPayload) => {
       markAsHandlerRead(payload);
     };
+    const updateConversation=(payload)=>{
+      console.log("updateConversation",payload)
+      updateConversationHandler(payload)
+    }
 
     const errorMarkAsHandler = () => errorMarkAsHandlerRead();
 
@@ -173,6 +200,7 @@ export const ConversationsProvider: React.FC<{ children: React.ReactNode }> = ({
     socket?.on("conversation:online-status", onlineHandler);
     socket?.on("conversation:accept", acceptHandler);
     socket?.on("conversation:update-unread-counts", markAsHandler);
+    socket?.on("conversation:update-conversation", updateConversation);
     socket?.on("conversation:mark-as-read:error", errorMarkAsHandler);
     socket?.on("conversation:request:error", errorHandler);
 
@@ -181,6 +209,7 @@ export const ConversationsProvider: React.FC<{ children: React.ReactNode }> = ({
       socket?.off("conversation:accept", acceptHandler);
       socket?.off("conversation:request:error", errorHandler);
       socket?.off("conversation:update-unread-counts", markAsHandler);
+      socket?.off("conversation:update-conversation", updateConversation);
       socket?.off("conversation:mark-as-read:error", errorMarkAsHandler);
     };
   }, [socket, handleConversationOnlineStatus]);
